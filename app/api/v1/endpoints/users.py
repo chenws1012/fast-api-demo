@@ -1,73 +1,91 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from datetime import datetime
 from app.schemas.user import User, UserCreate, UserUpdate
+from app.schemas.response import ResponseModel, success_response
+from app.crud.user import crud_user
+from app.database import get_db
 
 router = APIRouter()
 
-# 模拟数据库
-fake_users_db = {}
-user_id_counter = 1
 
-
-@router.get("/", response_model=List[User])
-async def get_users(skip: int = 0, limit: int = 10):
+@router.get("/", response_model=ResponseModel[List[User]])
+async def get_users(
+    skip: int = 0, 
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
     """
     获取所有用户列表
     """
-    users = list(fake_users_db.values())
-    return users[skip: skip + limit]
+    users = await crud_user.get_multi(db, skip=skip, limit=limit)
+    return success_response(data=users)
 
 
-@router.get("/{user_id}", response_model=User)
-async def get_user(user_id: int):
+@router.get("/{user_id}", response_model=ResponseModel[User])
+async def get_user(
+    user_id: int,
+    db: AsyncSession = Depends(get_db)
+):
     """
     根据ID获取用户
     """
-    if user_id not in fake_users_db:
+    user = await crud_user.get(db, user_id=user_id)
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return fake_users_db[user_id]
+    return success_response(data=user)
 
 
-@router.post("/", response_model=User, status_code=201)
-async def create_user(user: UserCreate):
+@router.post("/", response_model=ResponseModel[User], status_code=201)
+async def create_user(
+    user: UserCreate,
+    db: AsyncSession = Depends(get_db)
+):
     """
     创建新用户
     """
-    global user_id_counter
-    new_user = User(
-        id=user_id_counter,
-        created_at=datetime.now(),
-        updated_at=None,
-        **user.model_dump()
-    )
-    fake_users_db[user_id_counter] = new_user
-    user_id_counter += 1
-    return new_user
+    # 检查用户名是否已存在
+    if await crud_user.get_by_username(db, username=user.username):
+        raise HTTPException(
+            status_code=400,
+            detail="Username already registered"
+        )
+    # 检查邮箱是否已存在
+    if await crud_user.get_by_email(db, email=user.email):
+        raise HTTPException(
+            status_code=400,
+            detail="Email already registered"
+        )
+    created_user = await crud_user.create(db, obj_in=user)
+    return success_response(data=created_user, msg="User created successfully")
 
 
-@router.put("/{user_id}", response_model=User)
-async def update_user(user_id: int, user: UserUpdate):
+@router.put("/{user_id}", response_model=ResponseModel[User])
+async def update_user(
+    user_id: int,
+    user: UserUpdate,
+    db: AsyncSession = Depends(get_db)
+):
     """
     更新用户信息
     """
-    if user_id not in fake_users_db:
+    db_user = await crud_user.get(db, user_id=user_id)
+    if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    stored_user = fake_users_db[user_id]
-    update_data = user.model_dump(exclude_unset=True)
-    update_data['updated_at'] = datetime.now()
-    updated_user = stored_user.model_copy(update=update_data)
-    fake_users_db[user_id] = updated_user
-    return updated_user
+    updated_user = await crud_user.update(db, db_obj=db_user, obj_in=user)
+    return success_response(data=updated_user, msg="User updated successfully")
 
 
-@router.delete("/{user_id}")
-async def delete_user(user_id: int):
+@router.delete("/{user_id}", response_model=ResponseModel[dict])
+async def delete_user(
+    user_id: int,
+    db: AsyncSession = Depends(get_db)
+):
     """
     删除用户
     """
-    if user_id not in fake_users_db:
+    db_user = await crud_user.get(db, user_id=user_id)
+    if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-    del fake_users_db[user_id]
-    return {"message": "User deleted successfully"}
+    await crud_user.delete(db, user_id=user_id)
+    return success_response(data=None, msg="User deleted successfully")

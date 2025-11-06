@@ -1,73 +1,79 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from datetime import datetime
 from app.schemas.item import Item, ItemCreate, ItemUpdate
+from app.schemas.response import ResponseModel, success_response
+from app.crud.item import crud_item
+from app.database import get_db
 
 router = APIRouter()
 
-# 模拟数据库
-fake_items_db = {}
-item_id_counter = 1
 
-
-@router.get("/", response_model=List[Item])
-async def get_items(skip: int = 0, limit: int = 10):
+@router.get("/", response_model=ResponseModel[List[Item]])
+async def get_items(
+    skip: int = 0, 
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db)
+):
     """
     获取所有物品列表
     """
-    items = list(fake_items_db.values())
-    return items[skip: skip + limit]
+    items = await crud_item.get_multi(db, skip=skip, limit=limit)
+    return success_response(data=items)
 
 
-@router.get("/{item_id}", response_model=Item)
-async def get_item(item_id: int):
+@router.get("/{item_id}", response_model=ResponseModel[Item])
+async def get_item(
+    item_id: int,
+    db: AsyncSession = Depends(get_db)
+):
     """
     根据ID获取物品
     """
-    if item_id not in fake_items_db:
+    item = await crud_item.get(db, item_id=item_id)
+    if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    return fake_items_db[item_id]
+    return success_response(data=item)
 
 
-@router.post("/", response_model=Item, status_code=201)
-async def create_item(item: ItemCreate):
+@router.post("/", response_model=ResponseModel[Item], status_code=201)
+async def create_item(
+    item: ItemCreate,
+    db: AsyncSession = Depends(get_db)
+):
     """
     创建新物品
     """
-    global item_id_counter
-    new_item = Item(
-        id=item_id_counter,
-        created_at=datetime.now(),
-        updated_at=None,
-        **item.model_dump()
-    )
-    fake_items_db[item_id_counter] = new_item
-    item_id_counter += 1
-    return new_item
+    created_item = await crud_item.create(db, obj_in=item)
+    return success_response(data=created_item, msg="Item created successfully")
 
 
-@router.put("/{item_id}", response_model=Item)
-async def update_item(item_id: int, item: ItemUpdate):
+@router.put("/{item_id}", response_model=ResponseModel[Item])
+async def update_item(
+    item_id: int,
+    item: ItemUpdate,
+    db: AsyncSession = Depends(get_db)
+):
     """
     更新物品信息
     """
-    if item_id not in fake_items_db:
+    db_item = await crud_item.get(db, item_id=item_id)
+    if not db_item:
         raise HTTPException(status_code=404, detail="Item not found")
-    
-    stored_item = fake_items_db[item_id]
-    update_data = item.model_dump(exclude_unset=True)
-    update_data['updated_at'] = datetime.now()
-    updated_item = stored_item.model_copy(update=update_data)
-    fake_items_db[item_id] = updated_item
-    return updated_item
+    updated_item = await crud_item.update(db, db_obj=db_item, obj_in=item)
+    return success_response(data=updated_item, msg="Item updated successfully")
 
 
-@router.delete("/{item_id}")
-async def delete_item(item_id: int):
+@router.delete("/{item_id}", response_model=ResponseModel[dict])
+async def delete_item(
+    item_id: int,
+    db: AsyncSession = Depends(get_db)
+):
     """
     删除物品
     """
-    if item_id not in fake_items_db:
+    db_item = await crud_item.get(db, item_id=item_id)
+    if not db_item:
         raise HTTPException(status_code=404, detail="Item not found")
-    del fake_items_db[item_id]
-    return {"message": "Item deleted successfully"}
+    await crud_item.delete(db, item_id=item_id)
+    return success_response(data=None, msg="Item deleted successfully")

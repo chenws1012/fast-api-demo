@@ -17,8 +17,8 @@ RUN apt-get update \
 COPY requirements.txt .
 
 # 安装Python依赖
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+RUN pip install -i https://mirrors.aliyun.com/pypi/simple/ --no-cache-dir --upgrade pip \
+    && pip install -i https://mirrors.aliyun.com/pypi/simple/ --no-cache-dir -r requirements.txt
 
 # 复制项目代码
 COPY . .

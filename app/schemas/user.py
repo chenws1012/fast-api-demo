@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 
@@ -18,7 +18,7 @@ class UserCreate(UserBase):
     """
     创建用户时使用
     """
-    password: str
+    password: str = Field(..., min_length=8, max_length=72, description="密码，最长72字节")
 
 
 class UserUpdate(BaseModel):
