@@ -6,9 +6,10 @@
 
 ```
 fastapi_demo/
-├── app/
+├── app/                         # 应用主目录
 │   ├── __init__.py
 │   ├── main.py                  # 应用入口文件
+│   ├── database.py              # 数据库配置
 │   ├── core/                    # 核心模块
 │   │   ├── __init__.py
 │   │   └── config.py            # 应用配置
@@ -21,16 +22,33 @@ fastapi_demo/
 │   │           ├── __init__.py
 │   │           ├── items.py     # 物品相关接口
 │   │           └── users.py     # 用户相关接口
-│   └── schemas/                 # 数据模型
+│   ├── models/                  # 数据库模型
+│   │   ├── __init__.py
+│   │   ├── base.py              # 基础模型
+│   │   ├── item.py              # 物品模型
+│   │   └── user.py              # 用户模型
+│   ├── schemas/                 # Pydantic 数据模型
+│   │   ├── __init__.py
+│   │   ├── item.py              # 物品数据模型
+│   │   ├── user.py              # 用户数据模型
+│   │   └── response.py          # 响应模型
+│   └── crud/                    # CRUD 操作
 │       ├── __init__.py
-│       ├── item.py              # 物品数据模型
-│       └── user.py              # 用户数据模型
+│       ├── item.py              # 物品 CRUD
+│       └── user.py              # 用户 CRUD
 ├── requirements.txt             # 依赖包
-├── .env                         # 环境变量
-├── .gitignore                   # Git 忽略文件
-├── Dockerfile                   # Docker 构建文件
-├── docker-compose.yml           # Docker Compose 配置
-└── README.md                    # 项目文档
+├── pyproject.toml              # Python 项目配置
+├── uv.lock                     # UV 锁文件
+├── .env.example                # 环境变量示例
+├── .gitignore                  # Git 忽略文件
+├── .python-version             # Python 版本
+├── Dockerfile                  # Docker 构建文件
+├── docker-compose.yml          # Docker Compose 配置
+├── main.py                     # 备用入口文件
+├── run.py                      # 运行脚本
+├── test_database.py            # 数据库测试
+├── test_async_database.py      # 异步数据库测试
+└── README.md                   # 项目文档
 ```
 
 ## 功能特性
