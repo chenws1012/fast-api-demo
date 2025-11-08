@@ -1,6 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
+
+from app.core.exceptions import BusinessException
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 
@@ -53,10 +55,15 @@ class CRUDUser:
             is_superuser=obj_in.is_superuser,
         )
         await db_obj.hash_password_async(obj_in.password)
-        db.add(db_obj)
-        await db.commit()
-        await db.refresh(db_obj)
-        return db_obj
+
+        try:
+            db.add(db_obj)
+            await db.commit()
+            await db.refresh(db_obj)
+            return db_obj
+        except Exception as e:
+            await db.rollback()
+            raise BusinessException(message=str(e))
 
     async def update(
         self, db: AsyncSession, *, db_obj: User, obj_in: UserUpdate

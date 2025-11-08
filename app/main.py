@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.api.v1.api import api_router
+from app.core.exceptions import BusinessException
 from app.database import create_tables
 from app.schemas.response import error_response
 
@@ -30,6 +31,20 @@ async def startup_event():
     await create_tables()
 
 # 全局异常处理
+@app.exception_handler(BusinessException)
+async def business_exception_handler(request: Request, exc: BusinessException):
+    """
+    业务异常统一处理
+    """
+    return JSONResponse(
+        status_code=200,
+        content=error_response(
+            code=exc.code,
+            msg=exc.message,
+            data=exc.data
+        ).model_dump()
+    )
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     """

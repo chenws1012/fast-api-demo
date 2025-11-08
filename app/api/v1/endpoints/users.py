@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
+
+from app.core.exceptions import NotFoundException, BusinessException
 from app.schemas.user import User, UserCreate, UserUpdate
 from app.schemas.response import ResponseModel, success_response
 from app.crud.user import crud_user
@@ -32,7 +34,8 @@ async def get_user(
     """
     user = await crud_user.get(db, user_id=user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        # raise HTTPException(status_code=404, detail="User not found")
+        raise NotFoundException(message="User not found")
     return success_response(data=user)
 
 
@@ -46,16 +49,12 @@ async def create_user(
     """
     # 检查用户名是否已存在
     if await crud_user.get_by_username(db, username=user.username):
-        raise HTTPException(
-            status_code=400,
-            detail="Username already registered"
-        )
+        raise BusinessException(message="Username already registered")
+
     # 检查邮箱是否已存在
     if await crud_user.get_by_email(db, email=user.email):
-        raise HTTPException(
-            status_code=400,
-            detail="Email already registered"
-        )
+        raise BusinessException(message="Email already registered")
+
     created_user = await crud_user.create(db, obj_in=user)
     return success_response(data=created_user, msg="User created successfully")
 
