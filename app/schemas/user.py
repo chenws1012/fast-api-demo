@@ -57,3 +57,12 @@ class UserLogin(BaseModel):
     """
     username: str
     password: str
+
+
+class Token(BaseModel):
+    """
+    令牌模型
+    """
+    access_token: str
+    token_type: str = "bearer"
+

@@ -19,12 +19,15 @@ class Settings(BaseSettings):
     ]
     
     # 数据库配置
-    DATABASE_URL: str = "sqlite:///./app.db"
-    # 如果使用 PostgreSQL，使用如下格式：
+    # MySQL 配置（默认）
+    # DATABASE_URL: str = "mysql://user:password@localhost/fastapi_demo"
+    # PostgreSQL 配置：
     # DATABASE_URL: str = "postgresql://user:password@localhost/dbname"
+    # SQLite 配置（开发和测试）：
+    DATABASE_URL: str = "sqlite:///./app.db"
     
     # JWT配置
-    SECRET_KEY: str = "your-secret-key-change-this-in-production"
+    SECRET_KEY: str = "aB3$kL9#xZ7!qW2@eR5^tY8*uI1&pO4X"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     

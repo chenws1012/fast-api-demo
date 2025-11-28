@@ -1,17 +1,20 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from app.schemas.item import Item, ItemCreate, ItemUpdate
 from app.schemas.response import ResponseModel, success_response
 from app.crud.item import crud_item
 from app.database import get_db
+from app.api import deps
+from app.models.user import User
 
 router = APIRouter()
 
 
 @router.get("/", response_model=ResponseModel[List[Item]])
 async def get_items(
-    skip: int = 0, 
+    current_user: User = Depends(deps.get_current_user),
+    skip: int = 0,
     limit: int = 10,
     db: AsyncSession = Depends(get_db)
 ):
@@ -25,6 +28,7 @@ async def get_items(
 @router.get("/{item_id}", response_model=ResponseModel[Item])
 async def get_item(
     item_id: int,
+    current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -39,6 +43,7 @@ async def get_item(
 @router.post("/", response_model=ResponseModel[Item], status_code=201)
 async def create_item(
     item: ItemCreate,
+    current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -52,6 +57,7 @@ async def create_item(
 async def update_item(
     item_id: int,
     item: ItemUpdate,
+    current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -67,6 +73,7 @@ async def update_item(
 @router.delete("/{item_id}", response_model=ResponseModel[dict])
 async def delete_item(
     item_id: int,
+    current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
