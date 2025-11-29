@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
+
+import anyio.to_thread
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
@@ -26,12 +28,15 @@ def create_access_token(subject: str, expires_delta: timedelta = None) -> str:
     return encoded_jwt
 
 
-def verify_access_token(token: str) -> Optional[str]:
+async def verify_access_token(token: str) -> Optional[str]:
     """
     验证访问令牌并返回用户名
     """
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        payload = await anyio.to_thread.run_sync(
+            jwt.decode, token, settings.SECRET_KEY, ALGORITHM
+        )
+
         username: str = payload.get("sub")
         if username is None:
             return None
