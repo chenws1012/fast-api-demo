@@ -1,188 +1,226 @@
 # FastAPI 项目模板
 
-这是一个使用 FastAPI 构建的现代化 RESTful API 项目模板，包含了完整的项目结构和最佳实践。
+这是一个使用 FastAPI 构建的现代化 RESTful API 项目模板，采用干净架构模式。支持异步数据库操作 (SQLAlchemy + aiosqlite)，清晰分离模型、schemas、CRUD 和 API 端点。
 
 ## 项目结构
 
 ```
 fastapi_demo/
-├── app/                         # 应用主目录
+├── app/                          # 应用主目录
 │   ├── __init__.py
-│   ├── main.py                  # 应用入口文件
-│   ├── database.py              # 数据库配置
-│   ├── core/                    # 核心模块
+│   ├── main.py                   # 应用入口
+│   ├── database.py               # 数据库配置
+│   ├── core/                     # 核心模块
 │   │   ├── __init__.py
-│   │   └── config.py            # 应用配置
-│   ├── api/                     # API 路由
-│   │   ├── __init__.py
+│   │   ├── config.py             # 配置
+│   │   ├── security.py           # JWT 安全 (异步优化)
+│   │   └── exceptions.py         # 自定义异常
+│   ├── api/                      # API 路由
 │   │   └── v1/
-│   │       ├── __init__.py
-│   │       ├── api.py           # 主路由聚合器
-│   │       └── endpoints/       # 具体端点
-│   │           ├── __init__.py
-│   │           ├── items.py     # 物品相关接口
-│   │           └── users.py     # 用户相关接口
-│   ├── models/                  # 数据库模型
-│   │   ├── __init__.py
-│   │   ├── base.py              # 基础模型
-│   │   ├── item.py              # 物品模型
-│   │   └── user.py              # 用户模型
-│   ├── schemas/                 # Pydantic 数据模型
-│   │   ├── __init__.py
-│   │   ├── item.py              # 物品数据模型
-│   │   ├── user.py              # 用户数据模型
-│   │   └── response.py          # 响应模型
-│   └── crud/                    # CRUD 操作
-│       ├── __init__.py
-│       ├── item.py              # 物品 CRUD
-│       └── user.py              # 用户 CRUD
-├── requirements.txt             # 依赖包
-├── pyproject.toml              # Python 项目配置
-├── uv.lock                     # UV 锁文件
-├── .env.example                # 环境变量示例
-├── .gitignore                  # Git 忽略文件
-├── .python-version             # Python 版本
-├── Dockerfile                  # Docker 构建文件
-├── docker-compose.yml          # Docker Compose 配置
-├── main.py                     # 备用入口文件
-├── run.py                      # 运行脚本
-├── test_database.py            # 数据库测试
-├── test_async_database.py      # 异步数据库测试
-└── README.md                   # 项目文档
+│   │       ├── api.py            # 路由聚合
+│   │       └── endpoints/
+│   │           ├── users.py      # 用户接口 (含登录)
+│   │           └── items.py      # 物品接口
+│   ├── models/                   # 数据库模型
+│   │   ├── base.py
+│   │   ├── user.py
+│   │   └── item.py
+│   ├── schemas/                  # Pydantic 模型
+│   │   ├── user.py
+│   │   ├── item.py
+│   │   └── response.py
+│   └── crud/                     # CRUD 操作
+│       ├── user.py
+│       └── item.py
+├── requirements.txt
+├── pyproject.toml                # Python 配置 (Python 3.11+)
+├── uv.lock
+├── .env.example
+├── run.py                        # 启动脚本
+├── test_database.py
+├── test_async_database.py
+├── Dockerfile
+├── docker-compose.yml
+└── README.md
 ```
+
+## 架构说明
+
+### 分层结构
+1. **Models** (`app/models/`): SQLAlchemy ORM 模型
+2. **Schemas** (`app/schemas/`): Pydantic 验证
+3. **CRUD** (`app/crud/`): 数据库访问层
+4. **API** (`app/api/`): REST 端点
+5. **Core** (`app/core/`): 配置、安全、异常
+
+### 数据库
+- 异步 SQLite (SQLAlchemy async + aiosqlite)
+- `get_db()` 依赖注入 AsyncSession
+- 启动时自动建表
+
+### 异常处理
+三层处理 (`app/main.py`):
+1. `BusinessException` → 200 + 错误码
+2. `HTTPException` → HTTP 状态码
+3. 通用 `Exception` → 500 (DEBUG 模式详细)
 
 ## 功能特性
 
-- ✅ FastAPI 框架 - 现代化高性能 Web 框架
-- ✅ Pydantic 数据验证 - 强类型数据模型
-- ✅ 自动化 API 文档 - Swagger UI 和 ReDoc
-- ✅ 模块化项目结构 - 易于扩展和维护
-- ✅ 配置管理 - 基于环境变量
-- ✅ CORS 支持 - 跨域资源共享
-- ✅ 错误处理 - 统一的异常处理机制
-- ✅ 数据模型分离 - 业务逻辑与数据模型解耦
-- ✅ Docker 支持 - 容器化部署
-- ✅ 完整的 CRUD 接口示例
+- ✅ FastAPI 高性能框架
+- ✅ Pydantic v2 验证
+- ✅ 自动 OpenAPI 文档 (/docs, /redoc)
+- ✅ 异步数据库操作
+- ✅ **异步 JWT 认证** (非阻塞，anyio.to_thread 优化高并发)
+- ✅ 自定义异常 & 统一响应
+- ✅ CORS 支持
+- ✅ Docker 部署
+- ✅ UV 依赖管理 (推荐)
 
 ## 快速开始
 
-### 1. 克隆项目
+### 1. 环境要求
+Python 3.11+
 
+### 2. 安装依赖 (推荐 UV)
 ```bash
-git clone <your-repo-url>
-cd fastapi_demo
+uv pip install -r requirements.txt
+# 或 pip install -r requirements.txt
 ```
 
-### 2. 创建虚拟环境
+### 3. 配置 .env
+复制 `.env.example` → `.env`，修改 SECRET_KEY 等。
 
+### 4. 运行
 ```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
+python run.py  # 开发模式 (reload)
 # 或
-venv\\Scripts\\activate  # Windows
-```
-
-### 3. 安装依赖
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. 配置环境变量
-
-创建 `.env` 文件并配置必要的环境变量：
-
-```env
-PROJECT_NAME=FastAPI Template
-VERSION=1.0.0
-DATABASE_URL=sqlite:///./app.db
-SECRET_KEY=your-secret-key-change-this-in-production
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-```
-
-### 5. 运行应用
-
-```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 6. 访问应用
+访问: http://localhost:8000/docs
 
-- 应用地址: http://localhost:8000
-- API 文档: http://localhost:8000/docs
-- ReDoc 文档: http://localhost:8000/redoc
-- 健康检查: http://localhost:8000/health
+## API 端点 (前缀 /api/v1)
 
-## API 端点
+### 用户 (/users)
+- `POST /login` - 登录获取 Token (UserLogin: username/password)
+- `GET /` - 列表 (分页)
+- `GET /{user_id}` - 获取
+- `POST /` - 创建
+- `PUT /{user_id}` - 更新
+- `DELETE /{user_id}` - 删除
 
-### 用户相关接口
-- `GET /api/v1/users/` - 获取用户列表
-- `GET /api/v1/users/{user_id}` - 获取单个用户
-- `POST /api/v1/users/` - 创建新用户
-- `PUT /api/v1/users/{user_id}` - 更新用户信息
-- `DELETE /api/v1/users/{user_id}` - 删除用户
+### 物品 (/items)
+- `GET /` - 列表
+- `GET /{item_id}` - 获取
+- `POST /` - 创建
+- `PUT /{item_id}` - 更新
+- `DELETE /{item_id}` - 删除
 
-### 物品相关接口
-- `GET /api/v1/items/` - 获取物品列表
-- `GET /api/v1/items/{item_id}` - 获取单个物品
-- `POST /api/v1/items/` - 创建新物品
-- `PUT /api/v1/items/{item_id}` - 更新物品信息
-- `DELETE /api/v1/items/{item_id}` - 删除物品
+### 工具
+- `GET /` - 欢迎
+- `GET /health` - 健康检查
 
-## 开发指南
+## JWT 认证
 
-### 添加新的 API 端点
+1. **登录**:
+```bash
+curl -X POST http://localhost:8000/api/v1/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test","password":"test"}'
+```
+返回 `{"access_token": "eyJ..."}`
 
-1. 在 `app/api/v1/endpoints/` 目录下创建新的路由文件
-2. 定义路由和对应的 schemas
-3. 在 `app/api/v1/api.py` 中注册新路由
+2. **保护端点**:
+```
+Authorization: Bearer <access_token>
+```
 
-### 修改数据模型
+实现: `deps.py` get_current_user (await verify_access_token)，`security.py` 异步 JWT。
 
-1. 在 `app/schemas/` 目录下修改或创建新的模型
-2. 更新相关的 API 端点以使用新的模型
+## 最近变更
 
-### 配置管理
+- **73f71d0** feat(auth): 异步 JWT 验证 (anyio.to_thread 优化并发)
+- **641ee08** fix(auth): get_current_user 检查用户活跃状态
+- **7f44519** feat(auth): 用户认证 & 权限控制
+- **f5e9c82** docs: 添加 CLAUDE.md
+- **e4869a9** feat: 结构化异常处理
 
-- 应用配置位于 `app/core/config.py`
-- 支持通过环境变量或 `.env` 文件进行配置
-- 生产环境请修改默认的密钥和配置
+## 性能测试 (wrk)
 
-## Docker 部署
+安装: `brew install wrk`
 
-### 构建镜像
+登录压测:
+```bash
+echo 'wrk.method = "POST"
+wrk.body   = '{"username":"test","password":"test"}'
+wrk.headers["Content-Type"] = "application/json"' > post.lua
 
+wrk -t12 -c400 -d30s -s post.lua http://localhost:8000/api/v1/users/login --latency
+```
+
+预期: Requests/sec >5k, P99 <50ms (异步后)。
+
+## 开发命令
+
+### 运行
+```bash
+python run.py  # 开发
+uvicorn app.main:app  # 生产
+```
+
+### 测试
+```bash
+pytest  # 全部
+pytest test_async_database.py -v  # 异步 DB
+python test_database.py  # CRUD 测试
+```
+
+### Docker
 ```bash
 docker build -t fastapi-demo .
-```
-
-### 使用 Docker Compose
-
-```bash
 docker-compose up -d
+docker run -p 8000:8000 fastapi-demo
 ```
 
-## 测试
-
-运行测试：
-
+### 依赖 (UV 推荐)
 ```bash
-pytest
+uv pip install -r requirements.txt
 ```
 
-## 环境要求
+## 配置
 
-- Python 3.8+
+`app/core/config.py` (pydantic-settings):
+- DATABASE_URL: sqlite:///./app.db
+- SECRET_KEY, ALGORITHM=HS256, ACCESS_TOKEN_EXPIRE_MINUTES=30
+- DEBUG, ALLOWED_ORIGINS 等
+
+## 开发工作流
+
+### 新资源
+1. `app/models/{resource}.py`
+2. `app/schemas/{resource}.py`
+3. `app/crud/{resource}.py`
+4. `app/api/v1/endpoints/{resource}.py`
+5. 注册 `app/api/v1/api.py`
+
+### 迁移 (Alembic)
+```bash
+alembic init alembic
+alembic revision --autogenerate -m "desc"
+alembic upgrade head
+```
+
+## 关键依赖 (pyproject.toml)
+
 - FastAPI 0.109.0
-- Uvicorn 0.27.0
-- SQLAlchemy 2.0.25
-- Pydantic 2.5.3
+- SQLAlchemy[asyncio] 2.0.25
+- python-jose[cryptography] 3.3.0
+- pydantic 2.5.3
+- uvicorn[standard] 0.27.0
+- anyio 4.11.0 (异步线程)
 
-## 许可证
+## 许可证 & 贡献
 
-本项目采用 MIT 许可证。
+MIT 许可证。欢迎 PR！
 
-## 贡献
-
-欢迎提交 Pull Request 和 Issue！
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
